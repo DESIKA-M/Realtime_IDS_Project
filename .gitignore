@@ -1,0 +1,30 @@
+# Python virtual environments
+.spark-venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Spark streaming checkpoints
+checkpoint/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+
+# Backup files
+*_backup.py
+*_before_ml_integration.py
+*_before_spark_ml.py
+
+# Old input/test data
+input/
+
+# Old notebook
+capture.ipynb
