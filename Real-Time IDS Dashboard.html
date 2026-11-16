@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Real-Time IDS Dashboard</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#eef6f6;--card:#fff;--ink:#0d2b2e;--mute:#5b7a7d;--line:#d3e5e4;--pri:#0f766e;--pri2:#1d6fa5;--soft:#dff0ee;--att:#1d4e89;--ok:#14a38b;--hi:#0b3a5b}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0a1a1d;--card:#10272b;--ink:#e3f2f0;--mute:#8fb0b3;--line:#1c3d42;--pri:#2dd4bf;--pri2:#5eb4e8;--soft:#163a3f;--att:#6aa9e9;--ok:#2dd4bf;--hi:#9fd0f5}}
+:root[data-theme="dark"]{--bg:#0a1a1d;--card:#10272b;--ink:#e3f2f0;--mute:#8fb0b3;--line:#1c3d42;--pri:#2dd4bf;--pri2:#5eb4e8;--soft:#163a3f;--att:#6aa9e9;--ok:#2dd4bf;--hi:#9fd0f5}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+h1{font-size:20px;margin:0;font-weight:700;letter-spacing:-.2px}
+h2{font-size:15px;margin:0 0 10px;font-weight:650}
+.sub{color:var(--mute);font-size:12.5px}
+.status{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 8px 6px 14px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:p 1.8s infinite}
+.paused .dot{background:var(--mute);animation:none}
+@keyframes p{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media(prefers-reduced-motion:reduce){.dot{animation:none}}
+button,select,input{font:inherit;color:var(--ink)}
+button{cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px}
+button:hover{background:var(--soft)}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+button.pri:hover{filter:brightness(1.1);background:var(--pri)}
+:focus-visible{outline:2px solid var(--pri2);outline-offset:2px}
+.status button{border-radius:999px;padding:4px 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+.filters label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--mute)}
+.filters select,.filters input{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:120px}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:var(--bg);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--pri);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.kpi b{display:block;font-size:28px;font-weight:700;letter-spacing:-.5px}
+.kpi span{color:var(--mute);font-size:12.5px}
+.kpi.a b{color:var(--att)}.kpi.n b{color:var(--ok)}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1.6fr;gap:12px;margin-bottom:12px}
+@media(max-width:900px){.grid,.grid2{grid-template-columns:1fr}}
+.tl{display:flex;align-items:flex-end;gap:3px;height:170px;border-bottom:1px solid var(--line)}
+.tl div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;min-width:0}
+.tl i{display:block;background:var(--pri)}.tl i.at{background:var(--att)}
+.axis{display:flex;justify-content:space-between;color:var(--mute);font-size:11.5px;margin-top:4px}
+.legend{display:flex;gap:14px;color:var(--mute);font-size:12px;margin-top:8px}
+.legend s{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;text-decoration:none}
+.dist{display:grid;gap:7px}
+.dist button{display:grid;grid-template-columns:110px 1fr 42px;gap:8px;align-items:center;border:0;background:none;padding:2px;text-align:left;border-radius:6px}
+.dist .bar{height:10px;background:var(--soft);border-radius:5px;overflow:hidden}
+.dist .bar i{display:block;height:100%;border-radius:5px}
+.dist .on{background:var(--soft)}
+.alerts{display:grid;gap:8px;max-height:330px;overflow:auto}
+.al{display:flex;gap:10px;justify-content:space-between;align-items:center;border:1px solid var(--line);border-left:4px solid var(--att);border-radius:8px;padding:8px 10px}
+.al.ack{opacity:.55;border-left-color:var(--mute)}
+.al small{color:var(--mute);display:block}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:600;font-size:12.5px;cursor:pointer;user-select:none}
+th:hover{color:var(--ink)}
+tbody tr:hover{background:var(--soft)}
+.tag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;background:var(--soft);color:var(--ink)}
+.tag.b{background:transparent;border:1px solid var(--ok);color:var(--ok)}
+.sev-Critical{background:var(--hi);color:#fff}.sev-High{background:var(--att);color:#fff}.sev-Medium{background:var(--pri2);color:#fff}.sev-Low{background:var(--soft)}
+.pg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-top:10px}
+.empty{color:var(--mute);padding:18px;text-align:center}
+#toast{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));background:var(--hi);color:#fff;padding:10px 14px;border-radius:10px;display:none;max-width:300px}
+.hide{display:none!important}
+</style></head><body>
+<div class="wrap">
+<header>
+ <div><h1>Real-Time Network IDS</h1><div class="sub">Sample data simulation - replace with DataBase</div></div>
+ <div class="status" id="status"><span class="dot"></span><span id="stxt">Live: monitoring</span><span class="sub" id="fps"></span>
+  <button id="live">Pause</button><button id="theme" title="Toggle theme">Theme</button></div>
+</header>
+
+<div class="card filters">
+ <label>Period<div class="seg" id="per">
+  <button data-p="today" class="on">Today</button><button data-p="yest">Yesterday</button><button data-p="7d">Last 7 days</button><button data-p="custom">Custom</button></div></label>
+ <label class="cust hide">From<input type="date" id="from"></label>
+ <label class="cust hide">To<input type="date" id="to"></label>
+ <label>Attack type<select id="atk"><option value="">All traffic</option><option value="__a">All attacks</option><option value="Benign">Benign only</option></select></label>
+ <label>Protocol<select id="pro"><option value="">All</option><option>TCP</option><option>UDP</option><option>ICMP</option></select></label>
+ <label>Severity<select id="sev"><option value="">All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></label>
+ <label>IP address<input id="ip" placeholder="e.g. 172.31 or 18.218.11.51"></label>
+ <button id="reset">Reset filters</button>
+</div>
+
+<div class="kpis">
+ <div class="card kpi"><b id="k1">0</b><span>Total flows</span></div>
+ <div class="card kpi n"><b id="k2">0</b><span>Normal traffic</span></div>
+ <div class="card kpi a"><b id="k3">0</b><span>Attacks detected</span></div>
+ <div class="card kpi"><b id="k4">0%</b><span>Attack share</span></div>
+ <div class="card kpi"><b id="k5">0</b><span>Unacknowledged alerts</span></div>
+</div>
+
+<div class="grid">
+ <div class="card"><h2>Traffic over time</h2><div class="tl" id="tl"></div><div class="axis"><span id="a1"></span><span id="a2"></span></div>
+  <div class="legend"><span><s style="background:var(--pri)"></s>Normal</span><span><s style="background:var(--att)"></s>Attack</span></div></div>
+ <div class="card"><h2>Attack-type distribution</h2><div class="dist" id="dist"></div><div class="sub" style="margin-top:8px">Click a bar to filter by that type.</div></div>
+</div>
+
+<div class="grid2">
+ <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Recent alerts</h2><button id="ackall">Acknowledge all</button></div><div class="alerts" id="alerts"></div></div>
+ <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2>Historical records</h2><button class="pri" id="csv">Export CSV</button></div>
+  <div class="tw"><table><thead><tr>
+   <th data-s="ts">Time ▾</th><th data-s="src">Source</th><th data-s="dst">Destination</th><th data-s="proto">Protocol</th><th data-s="dport">Dst port</th><th data-s="label">Predicted</th><th data-s="conf">Confidence</th><th data-s="sev">Severity</th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="pg"><span class="sub" id="pinfo"></span><span><button id="prev">Previous</button> <button id="next">Next</button></span></div></div>
+</div>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+const ATK=['DDoS-HOIC','DoS-Hulk','Bot','FTP-BruteForce','SSH-Bruteforce','Infiltration','SQL Injection'];
+const COL=['#0b3a5b','#1d4e89','#1d6fa5','#0f766e','#14a38b','#3fc1c9','#7fd6c2'];
+const PORT={'DDoS-HOIC':80,'DoS-Hulk':80,'Bot':8080,'FTP-BruteForce':21,'SSH-Bruteforce':22,'Infiltration':443,'SQL Injection':3306};
+const SEVB={'DDoS-HOIC':3,'DoS-Hulk':3,'Bot':2,'FTP-BruteForce':1,'SSH-Bruteforce':1,'Infiltration':4,'SQL Injection':3};
+const SEV=['','Low','Medium','High','Critical'];
+let seed=7;const r=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const pick=a=>a[Math.floor(r()*a.length)];
+const ip=p=>p+'.'+Math.floor(r()*250+2);
+let nid=1;
+function mk(ts){
+ const atk=r()<.24;const label=atk?pick(ATK):'Benign';
+ const conf=+(atk?.72+r()*.27:.85+r()*.14).toFixed(2);
+ let sev='-';if(atk){sev=SEV[Math.min(4,Math.max(1,SEVB[label]+(conf>.95?1:conf<.8?-1:0)))]}
+ const proto=label==='Benign'?pick(['TCP','TCP','UDP','UDP','ICMP']):(label==='Bot'?'UDP':'TCP');
+ return{id:nid++,ts,src:atk?ip('18.218.'+Math.floor(r()*40)):ip('172.31.'+Math.floor(r()*8)),dst:ip('172.31.69'),proto,
+  sport:Math.floor(r()*50000+1024),dport:atk?PORT[label]:pick([80,443,53,123,8080,22]),label,conf,sev,ack:!atk||r()<.6}}
+const D=[];const now=Date.now(),day0=new Date();day0.setHours(0,0,0,0);
+for(let i=0;i<3600;i++){const t=now-r()*7.5*864e5;D.push(mk(t))}
+D.sort((a,b)=>b.ts-a.ts);
+const $=id=>document.getElementById(id);
+const S={per:'today',page:0,sort:'ts',dir:-1,live:true};
+const fmt=t=>new Date(t).toLocaleString([], {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+ATK.forEach(a=>$('atk').add(new Option(a,a)));
+const ds=d=>{const x=new Date(d);x.setHours(0,0,0,0);return x.getTime()};
+function range(){const T=day0.getTime();
+ if(S.per==='today')return[T,1/0];if(S.per==='yest')return[T-864e5,T];
+ if(S.per==='7d')return[T-6*864e5,1/0];
+ const f=$('from').value,t=$('to').value;return[f?ds(f+'T00:00'):0,t?ds(t+'T00:00')+864e5:1/0]}
+function filt(){const[a,b]=range(),k=$('atk').value,p=$('pro').value,v=$('sev').value,q=$('ip').value.trim();
+ return D.filter(x=>x.ts>=a&&x.ts<b&&(!k||(k==='__a'?x.label!=='Benign':x.label===k))&&(!p||x.proto===p)&&(!v||x.sev===v)&&(!q||x.src.includes(q)||x.dst.includes(q)))}
+function render(){
+ const F=filt(),A=F.filter(x=>x.label!=='Benign'),n=F.length-A.length;
+ $('k1').textContent=F.length.toLocaleString();$('k2').textContent=n.toLocaleString();$('k3').textContent=A.length.toLocaleString();
+ $('k4').textContent=(F.length?A.length/F.length*100:0).toFixed(1)+'%';
+ $('k5').textContent=A.filter(x=>!x.ack).length;
+ // timeline
+ const[ra,rb]=range();const lo=F.length?Math.min(...F.map(x=>x.ts)):ra,hi=F.length?Math.max(...F.map(x=>x.ts)):now;
+ const s0=isFinite(ra)&&ra>0?ra:lo,s1=isFinite(rb)?Math.min(rb,now):hi,B=24,w=Math.max(1,(s1-s0)/B);
+ const bk=Array.from({length:B},()=>[0,0]);F.forEach(x=>{const i=Math.min(B-1,Math.max(0,Math.floor((x.ts-s0)/w)));bk[i][x.label==='Benign'?0:1]++});
+ const mx=Math.max(1,...bk.map(b=>b[0]+b[1]));
+ $('tl').innerHTML=bk.map((b,i)=>`<div title="${fmt(s0+i*w)}: ${b[0]} normal, ${b[1]} attack"><i class="at" style="height:${b[1]/mx*100}%"></i><i style="height:${b[0]/mx*100}%"></i></div>`).join('');
+ $('a1').textContent=fmt(s0);$('a2').textContent=fmt(s1);
+ // distribution
+ const c={};A.forEach(x=>c[x.label]=(c[x.label]||0)+1);const cm=Math.max(1,...Object.values(c));
+ $('dist').innerHTML=ATK.map((a,i)=>`<button data-a="${a}" class="${$('atk').value===a?'on':''}"><span>${a}</span><span class="bar"><i style="width:${(c[a]||0)/cm*100}%;background:${COL[i]}"></i></span><b>${c[a]||0}</b></button>`).join('');
+ // alerts
+ const R=A.slice(0,6);
+ $('alerts').innerHTML=R.length?R.map(x=>`<div class="al ${x.ack?'ack':''}"><div><b>${x.label}</b> <span class="tag sev-${x.sev}">${x.sev}</span><small>${x.src} → ${x.dst}:${x.dport} · ${x.proto} · ${fmt(x.ts)}</small></div><button data-k="${x.id}">${x.ack?'Undo':'Acknowledge'}</button></div>`).join(''):'<div class="empty">No alerts match these filters.</div>';
+ // table
+ const dir=S.dir,key=S.sort,SO={Critical:4,High:3,Medium:2,Low:1,'-':0};
+ const T=[...F].sort((a,b)=>{let x=a[key],y=b[key];if(key==='sev'){x=SO[x];y=SO[y]}return(x>y?1:x<y?-1:0)*dir});
+ const pp=10,pages=Math.max(1,Math.ceil(T.length/pp));S.page=Math.min(S.page,pages-1);
+ const pg=T.slice(S.page*pp,S.page*pp+pp);
+ $('rows').innerHTML=pg.length?pg.map(x=>`<tr><td>${fmt(x.ts)}</td><td>${x.src}:${x.sport}</td><td>${x.dst}</td><td>${x.proto}</td><td>${x.dport}</td><td><span class="tag ${x.label==='Benign'?'b':''}">${x.label}</span></td><td>${(x.conf*100).toFixed(0)}%</td><td>${x.sev==='-'?'–':`<span class="tag sev-${x.sev}">${x.sev}</span>`}</td></tr>`).join(''):'<tr><td colspan="8" class="empty">No records match. Try widening the period or resetting filters.</td></tr>';
+ $('pinfo').textContent=`Page ${S.page+1} of ${pages} · ${T.length.toLocaleString()} records`;
+ $('prev').disabled=S.page===0;$('next').disabled=S.page>=pages-1;
+ document.querySelectorAll('.cust').forEach(e=>e.classList.toggle('hide',S.per!=='custom'));
+ document.querySelectorAll('#per button').forEach(b=>b.classList.toggle('on',b.dataset.p===S.per));
+ T_=T}
+let T_=[];
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(t.h);t.h=setTimeout(()=>t.style.display='none',3000)}
+document.querySelectorAll('#per button').forEach(b=>b.onclick=()=>{S.per=b.dataset.p;S.page=0;
+ if(S.per==='custom'&&!$('from').value){const d=new Date(day0.getTime()-3*864e5);$('from').value=d.toISOString().slice(0,10);$('to').value=new Date().toISOString().slice(0,10)}render()});
+['atk','pro','sev','from','to'].forEach(i=>$(i).onchange=()=>{S.page=0;render()});
+$('ip').oninput=()=>{S.page=0;render()};
+$('reset').onclick=()=>{['atk','pro','sev','ip','from','to'].forEach(i=>$(i).value='');S.per='today';S.page=0;render()};
+$('dist').onclick=e=>{const b=e.target.closest('button');if(!b)return;$('atk').value=$('atk').value===b.dataset.a?'':b.dataset.a;S.page=0;render()};
+$('alerts').onclick=e=>{const b=e.target.closest('button');if(!b)return;const x=D.find(d=>d.id==b.dataset.k);x.ack=!x.ack;render()};
+$('ackall').onclick=()=>{filt().forEach(x=>x.ack=true);render();toast('All visible alerts acknowledged')};
+$('prev').onclick=()=>{S.page--;render()};$('next').onclick=()=>{S.page++;render()};
+document.querySelectorAll('th').forEach(h=>h.onclick=()=>{const k=h.dataset.s;S.dir=S.sort===k?-S.dir:-1;S.sort=k;
+ document.querySelectorAll('th').forEach(t=>t.textContent=t.textContent.replace(/ [▾▴]/,''));h.textContent+=S.dir<0?' ▾':' ▴';render()});
+$('csv').onclick=()=>{const h='timestamp,source_ip,source_port,destination_ip,destination_port,protocol,predicted_type,confidence,severity';
+ const rows=T_.map(x=>[new Date(x.ts).toISOString(),x.src,x.sport,x.dst,x.dport,x.proto,x.label,x.conf,x.sev].join(','));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h+'\n'+rows.join('\n')],{type:'text/csv'}));a.download='ids_records.csv';a.click();toast(`Exported ${rows.length} records`)};
+$('theme').onclick=()=>{const d=document.documentElement,dark=getComputedStyle(d).getPropertyValue('--bg').trim()==='#0a1a1d';d.dataset.theme=dark?'light':'dark'};
+let tick;function live(){clearInterval(tick);if(!S.live)return;
+ tick=setInterval(()=>{const k=1+Math.floor(Math.random()*3);for(let i=0;i<k;i++){const f=mk(Date.now());f.ack=f.label==='Benign';D.unshift(f);
+  if(f.label!=='Benign')toast(`New alert: ${f.label} from ${f.src}`)}$('fps').textContent=`${k*30} flows/s`;render()},2000)}
+$('live').onclick=()=>{S.live=!S.live;$('live').textContent=S.live?'Pause':'Resume';$('stxt').textContent=S.live?'Live: monitoring':'Paused';$('status').classList.toggle('paused',!S.live);live()};
+render();live();
+</script></body></html>
